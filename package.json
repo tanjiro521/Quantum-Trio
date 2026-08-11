@@ -1,0 +1,27 @@
+{
+  "name": "pulse-workload-intelligence",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "dev:frontend": "vite",
+    "dev:backend": "node server.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test src/lib/analysis.test.mjs"
+  },
+  "dependencies": {
+    "cors": "^2.8.0",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.2",
+    "framer-motion": "^11.11.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^9.0.1",
+    "vite": "^5.4.10"
+  }
+}
