@@ -14,6 +14,49 @@ Pulse turns a raw meeting transcript into a single-glance team-health snapshot. 
 - **Local dev:** Express server (`server.js`) via `npm run dev`
 - **No database. No auth. No real third-party integrations.**
 
+## How Pulse Works — Technical Overview
+
+Pulse transforms an unstructured meeting transcript into actionable workplace intelligence through a simple AI-powered pipeline.
+
+### 1. Transcript Input
+The user provides a meeting transcript through the React-based web interface. The transcript can contain conversations, decisions, responsibilities, deadlines, and team discussions in natural language.
+
+### 2. AI Analysis
+The transcript is sent to the application's analysis endpoint. The backend securely communicates with the Anthropic Claude API using an environment variable stored outside the source code.
+
+Claude analyzes the transcript and extracts structured information such as:
+- Decisions made during the meeting
+- Action items and their owners
+- Deadlines and responsibilities
+- Team workload
+- Risk indicators
+- Suggested follow-up nudges
+
+### 3. Structured Intelligence
+The AI response is converted into structured data that the frontend can interpret and display. Pulse calculates workload and risk information from the extracted action items to identify potential overload and accountability gaps.
+
+### 4. Visualization
+The React frontend transforms the analysis into an interactive dashboard containing:
+- Decisions
+- Action items
+- Team workload visualization
+- Risk analysis
+- AI-generated follow-up nudges
+
+This turns a long, messy meeting transcript into a concise view of **what was decided, who needs to do what, where the risks are, and what should happen next.**
+
+### 5. Reliability & Fallback
+Pulse is designed to remain usable even when the external AI service is unavailable. A local fallback analysis mechanism (`src/lib/analysis.js`) can provide demo analysis instead of leaving the user with a completely failed experience.
+
+### Technical Stack
+
+- **Frontend:** React + Vite
+- **Styling:** plain CSS and Framer Motion
+- **Backend/API:** Vercel Serverless Functions (`api/`) — local development uses an Express-based dev server (`server.js`)
+- **AI:** Anthropic Claude API
+- **Deployment:** Vercel
+- **Version Control:** Git + GitHub
+
 ## Run locally
 1. Install dependencies:
    ```bash
