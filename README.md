@@ -112,6 +112,10 @@ Response:
 }
 ```
 
+## Team Contributions
+
+- Priyanka Das (priyanka2023jpg): Contributed to the frontend design and styling of Pulse, helping refine the UI layout, component presentation, visual consistency, responsiveness, and overall user experience.
+
 ## Notes
 - `node_modules/`, `dist/`, `.vite/`, `.env`, `.env.local`, `.env*.local` are in `.gitignore`.
 - The backend has a simple in-memory rate limiter (6 requests/minute per IP).
