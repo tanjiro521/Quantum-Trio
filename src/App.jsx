@@ -179,6 +179,60 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loadingPhase, setLoadingPhase] = useState(0);
   const [activeGraphNode, setActiveGraphNode] = useState(null);
+
+  const [activeTab, setActiveTab] = useState('analysis'); // 'analysis' or 'stressTest'
+  const [draft, setDraft] = useState('');
+  const [stressLoading, setStressLoading] = useState(false);
+  const [stressError, setStressError] = useState('');
+  const [stressResult, setStressResult] = useState(null);
+  
+  const generateDraft = () => {
+    if (!analysis) return;
+    const decisions = analysis.decisions.join('. ');
+    const actions = analysis.actionItems.map(i => `${i.owner} will ${i.task}`).join(', ');
+    const newDraft = `Based on today's meeting, ${decisions}. ${actions}.`;
+    setDraft(newDraft);
+    setActiveTab('stressTest');
+  };
+
+  const calculateFrictionScore = (factors) => {
+    if (!factors) return 0;
+    let score = 0;
+    const weights = { tone: 0.2, deadlinePressure: 0.3, workloadImpact: 0.2, overtimeConcern: 0.15, ambiguity: 0.1, fairness: 0.05 };
+    for (const key in weights) {
+      if (factors[key]) {
+        score += factors[key] * weights[key];
+      }
+    }
+    return Math.round(score);
+  };
+
+  const frictionScore = stressResult ? calculateFrictionScore(stressResult.frictionFactors) : null;
+  const commRiskSeverity = frictionScore === null ? 'none' : frictionScore >= 70 ? 'red' : frictionScore >= 40 ? 'amber' : 'none';
+
+  const handleStressTest = async () => {
+    if (!draft.trim()) {
+      setStressError('Please enter a draft message.');
+      return;
+    }
+    setStressLoading(true);
+    setStressError('');
+    try {
+      const response = await fetch('/api/stress-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draft })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Stress test failed.');
+      setStressResult(data);
+    } catch (err) {
+      setStressError(err.message);
+    } finally {
+      setStressLoading(false);
+    }
+  };
+
   const requestIdRef = useRef(0);
   const reducedMotion = useReducedMotion();
 
@@ -311,7 +365,11 @@ function App() {
             </div>
           </div>
 
-          <div className="topbar-actions">
+          
+            <div className="topbar-actions">
+              <div className="search-pill" style={{ cursor: 'pointer', background: activeTab === 'analysis' ? 'rgba(45, 168, 216, 0.1)' : 'transparent' }} onClick={() => setActiveTab('analysis')}>📊 Analysis</div>
+              <div className="search-pill" style={{ cursor: 'pointer', background: activeTab === 'stressTest' ? 'rgba(45, 168, 216, 0.1)' : 'transparent' }} onClick={() => setActiveTab('stressTest')}>🧪 Stress Test</div>
+
             <div className="search-pill">⌕ Review</div>
             <div className="icon-pill">🔔</div>
             <div className="avatar-pill">MG</div>
@@ -320,6 +378,8 @@ function App() {
 
         <main className="content-stack">
           <AmbientBackground reducedMotion={reducedMotion} />
+ {activeTab === 'analysis' && (
+
 
           <motion.section className="hero-card" initial={reducedMotion ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }} whileHover={{ y: -3, scale: 1.005 }}>
             <div className="hero-copy">
@@ -343,8 +403,83 @@ function App() {
             {error ? <div className="error-box">{error}</div> : null}
           </motion.section>
 
-          <AnimatePresence mode="wait">
-            {loading ? (
+          )}
+<AnimatePresence mode="wait">
+
+          {activeTab === 'stressTest' && (
+            <motion.div className="results-shell" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
+              <section className="hero-card card">
+                <div className="hero-copy">
+                  <p className="eyebrow">Stress Test</p>
+                  <h3>Test your follow-up message</h3>
+                </div>
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="Draft your follow-up message..."
+                  style={{ minHeight: '120px' }}
+                />
+                <div className="hero-actions" style={{ marginTop: '16px' }}>
+                  <button className="primary-btn" onClick={handleStressTest} disabled={stressLoading}>{stressLoading ? 'Testing...' : 'Stress Test'}</button>
+                </div>
+                {stressError && <div className="error-box" style={{ marginTop: '16px' }}>{stressError}</div>}
+              </section>
+              
+              {stressResult && (
+                <section className="results-grid" style={{ marginTop: '24px' }}>
+                  <div className="card">
+                    <div className="section-heading">
+                      <div>
+                        <p className="eyebrow">Friction Score</p>
+                        <h3>{frictionScore}/100 - {frictionScore >= 70 ? 'CRITICAL' : frictionScore >= 40 ? 'MODERATE' : 'LOW'}</h3>
+                      </div>
+                    </div>
+                    <p style={{ fontStyle: 'italic', fontSize: '0.9em', opacity: 0.8, marginTop: '8px' }}>
+                      Simulated stakeholder perspectives to help you think through the message — not a prediction of any individual's actual reaction.
+                    </p>
+                  </div>
+                  
+                  {stressResult.personas.map(p => (
+                    <div className="card" key={p.name}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                        <div>
+                          <strong style={{ display: 'block' }}>{p.name}</strong>
+                          <span style={{ fontSize: '0.85em', opacity: 0.7 }}>{p.role}</span>
+                        </div>
+                        <span className={"badge " + (p.concernLevel === 'none' ? 'low' : p.concernLevel === 'moderate' ? 'medium' : p.concernLevel === 'high' ? 'high' : 'urgent')}>{p.concernLevel.toUpperCase()}</span>
+                      </div>
+                      {p.concernLevel !== 'none' && (
+                        <>
+                          <p><strong>Objection:</strong> {p.objection}</p>
+                          <p><strong>Triggers:</strong> {p.triggerPhrases.map(t => <span key={t} style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', margin: '0 4px', fontSize: '0.85em' }}>{t}</span>)}</p>
+                          <p style={{ marginTop: '8px' }}><strong>Suggestion:</strong> {p.suggestion}</p>
+                        </>
+                      )}
+                      {p.concernLevel === 'none' && (
+                         <p>{p.reason}</p>
+                      )}
+                    </div>
+                  ))}
+                  
+                  <div className="card" style={{ gridColumn: '1 / -1' }}>
+                    <div className="section-heading">
+                      <div>
+                        <p className="eyebrow">Suggested Rewrite</p>
+                        <h3>Lower Friction Alternative</h3>
+                      </div>
+                    </div>
+                    <p style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>{stressResult.rewrite}</p>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                      <button className="secondary-btn" onClick={() => navigator.clipboard.writeText(stressResult.rewrite)}>Copy Rewrite</button>
+                      <button className="secondary-btn" onClick={() => { setDraft(stressResult.rewrite); setStressResult(null); }}>Edit & Retest</button>
+                    </div>
+                  </div>
+                </section>
+              )}
+            </motion.div>
+          )}
+
+            {activeTab === 'analysis' && (loading ? (
               <motion.section key="loading" className="loading-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} role="status" aria-live="polite">
                 <motion.div className="loading-orb" animate={reducedMotion ? { scale: 1 } : { scale: [1, 1.06, 1], y: [0, -4, 0] }} transition={{ duration: 1.3, repeat: Infinity, ease: 'easeInOut' }} />
                 <AnimatePresence mode="wait">
@@ -355,7 +490,12 @@ function App() {
                 <p>Pulse is correlating decisions, owners, and deadlines.</p>
               </motion.section>
             ) : analysis ? (
+              
               <motion.div key="results" className="results-shell" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                   <motion.button type="button" className="primary-btn" onClick={generateDraft} whileHover={{ scale: 1.02 }}>Draft Follow-up Message</motion.button>
+                </div>
+
                 <motion.section className={`hero-insight card ${heroTone}`} initial={reducedMotion ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.25 }}>
                   <div className="hero-insight-icon">{heroTone === 'warning' ? '⚠' : '✓'}</div>
                   <div>
@@ -480,7 +620,7 @@ function App() {
                   </motion.article>
                 </section>
               </motion.div>
-            ) : null}
+            ) : null)}
           </AnimatePresence>
         </main>
 

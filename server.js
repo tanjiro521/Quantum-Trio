@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import path from 'path';
 import dotenv from 'dotenv';
 import analyzeHandler from './api/analyze.js';
+import stressTestHandler from './api/stress-test.js';
 import { createServer as createViteServer } from 'vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,7 @@ app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
 app.post('/api/analyze', analyzeHandler);
+app.post('/api/stress-test', stressTestHandler);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', anthropicKeyPresent: Boolean(process.env.ANTHROPIC_API_KEY) });
