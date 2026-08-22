@@ -315,16 +315,20 @@ function App() {
         { title: 'Action Items', value: '0', detail: 'Waiting for a transcript', accent: '#2DA8D8', trend: [18, 28, 42] },
         { title: 'High-Risk Owners', value: '0', detail: 'Waiting for a transcript', accent: '#F59E0B', trend: [10, 20, 32] },
         { title: 'Team Health', value: '—', detail: 'Waiting for a transcript', accent: '#14B8A6', trend: [20, 30, 44] },
+        { title: 'Communication Risk', value: '—', detail: 'Not tested yet', accent: '#14B8A6', trend: [16, 24, 34] },
       ];
     }
+
+    const communicationRiskAccent = commRiskSeverity === 'red' ? '#EF4444' : commRiskSeverity === 'amber' ? '#F59E0B' : '#14B8A6';
 
     return [
       { title: 'Decisions Found', value: analysis.summary.decisions.toString(), detail: 'From this transcript', accent: '#2DA8D8', trend: [24, 42, 60] },
       { title: 'Action Items', value: analysis.summary.actionItems.toString(), detail: 'Current workload signal', accent: '#2DA8D8', trend: [20, 36, 52] },
       { title: 'High-Risk Owners', value: analysis.summary.highRiskOwners.toString(), detail: 'Need attention', accent: '#F59E0B', trend: [12, 24, 40] },
       { title: 'Team Health', value: analysis.summary.teamHealth, detail: 'For this transcript', accent: '#14B8A6', trend: [18, 30, 46] },
+      { title: 'Communication Risk', value: stressResult ? frictionScore.toString() : '—', detail: stressResult ? 'Friction score / 100' : 'Not tested yet', accent: stressResult ? communicationRiskAccent : '#14B8A6', trend: [16, 24, 34], riskSeverity: stressResult ? commRiskSeverity : null },
     ];
-  }, [analysis]);
+  }, [analysis, commRiskSeverity, frictionScore, stressResult]);
 
   const heroTone = analysis?.hero?.severity === 'red' ? 'warning' : analysis?.hero?.severity === 'amber' ? 'warning-amber' : 'success';
 
@@ -521,7 +525,7 @@ function App() {
                         {card.title.includes('Decisions') ? '🧠' : card.title.includes('Action') ? '✓' : card.title.includes('High') ? '⚠' : '💚'}
                       </div>
                       <div className="summary-copy">
-                        <h4>{card.value === '—' ? card.value : <AnimatedCounter value={card.value.replace(/[^0-9]/g, '')} accent={card.accent} suffix={card.value.includes('%') ? '%' : ''} />}</h4>
+                        <h4>{card.value === '—' ? card.value : card.riskSeverity ? <><AnimatedCounter value={card.value} accent={card.accent} suffix="/100" /> <span className={`badge ${card.riskSeverity}`}>{card.riskSeverity === 'none' ? 'LOW' : card.riskSeverity.toUpperCase()}</span></> : <AnimatedCounter value={card.value.replace(/[^0-9]/g, '')} accent={card.accent} suffix={card.value.includes('%') ? '%' : ''} />}</h4>
                         <p>{card.title}</p>
                         <span>{card.detail}</span>
                       </div>
